@@ -1,7 +1,5 @@
-# /C:/Users/profe/OneDrive/2025-2026/TemplateDockerapp/scripts/run-container-from-env.ps1
-
 # Cargar variables de entorno desde el archivo
-$envFile = ".\env\dev.env"
+$envFile = ".\env\dev.apachephp.env"
 $envVars = @{}
 
 if (Test-Path $envFile) {
