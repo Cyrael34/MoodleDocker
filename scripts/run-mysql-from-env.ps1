@@ -1,25 +1,34 @@
-# Cargar variables de entorno desde el archivo
-$envFile = ".\env\dev.mysql.env"
+# Define parameters with default values
+param(
+    [string]$envFile = ".\env\dev.mysql.env"
+)
 $envVars = @{}
 
-if (Test-Path $envFile) {
-    Get-Content $envFile | ForEach-Object {
-        if ($_ -match '^\s*([^=]+)=(.*)$') {
-            $envVars[$matches[1]] = $matches[2]
-        }
+if (-not (Test-Path $envFile)) {
+    Write-Error "Env file '$envFile' not found."
+    exit 1
+} 
+Get-Content $envFile | ForEach-Object {
+    if ($_ -match '^\s*([^=]+)=(.*)$') {
+        $envVars[$matches[1]] = $matches[2]
     }
 }
-else {
-    Write-Error "Archivo $envFile no encontrado"
-    exit 1
-}
+
 
 # Configurar variables
-#$servername = $envVars['SERVER_NAME'] ?? 'moodle.mysql'
-$containerName = $envVars['CONTAINER_NAME'] ?? 'moodle.mysql'
-$portMapping = $envVars['PORT_MAPPING'] ?? '3306:3306'
-$imageName = $envVars['IMAGE_NAME'] ?? 'mysql:dev'
-$hostEntry = $envVars['HOST_ENTRY'] ?? 'moodle.mysql:127.0.0.1'
+
+$containerName = $envVars['DB_CONTAINER_NAME']
+#$dbName = $envVars['DB_NAME']
+#$dbUSer = $envVars['DB_USER']
+#$dbPass = $envVars['DB_PASS']
+#$dbRootPass = $envVars['DB_ROOT_PASS']
+$dbDataDir = $envVars['DB_DATADIR']
+$dbLogDir = $envVars['DB_LOG_DIR']
+$portMapping = $envVars['DB_PORT_MAPPING'] 
+$imageName = $envVars['DB_IMAGE_NAME']
+$hostEntry = $envVars['DB_HOST_ENTRY'] 
+
+
 
 # Eliminar contenedor si existe
 if (docker ps -a --filter "name=^${containerName}$" --format "{{.Names}}" | Select-Object -First 1) {
@@ -33,8 +42,8 @@ $dockerCmd = @(
     "docker run -d",
     "--name $containerName",
     "-p $portMapping",
-    "-v mysql_data:/var/lib/mysql",
-    "-v logs_mysql:/var/log/mysql",
+    "-v .\mysql_data:$dbDataDir",
+    "-v .\logs_mysql:$dbLogDir",
     "--env-file $envFile",
     "--add-host=$hostEntry",
     "--hostname $containerName",

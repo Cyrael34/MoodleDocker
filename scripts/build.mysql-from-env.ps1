@@ -1,34 +1,32 @@
 # Define parameters with default values
 param(
-    [string]$dockerfile = "docker\bd\mysql.dev.dockerfile",
-    [string]$envFile = ".\env\dev.mysql.env",
-    [string]$Tag = "mysql:dev"
+    [string]$envFile = ".\env\dev.mysql.env"
 )
+$envVars = @{}
 
-if (-not (Test-Path $EnvFile)) {
-    Write-Error "Env file '$EnvFile' not found."
+if (-not (Test-Path $envFile)) {
+    Write-Error "Env file '$envFile' not found."
     exit 1
+} 
+Get-Content $envFile | ForEach-Object {
+    if ($_ -match '^\s*([^=]+)=(.*)$') {
+        $envVars[$matches[1]] = $matches[2]
+    }
 }
+$Dockerfile = $envVars['DB_DOCKERFILE']
+$Tag = $envVars['DB_IMAGE_NAME']
+$buildArgsSTR = @(
+    "--build-arg DB_USER=" + $envVars['DB_USER'],
+    "--build-arg DB_PASS=" + $envVars['DB_PASS'],
+    "--build-arg DB_ROOT_PASS=" + $envVars['DB_ROOT_PASS'],
+    "--build-arg DB_DATADIR=" + $envVars['DB_DATADIR'],
+    "--build-arg DB_PORT=" + $envVars['DB_PORT']
+) -join ' '
 
-$lines = Get-Content $EnvFile -ErrorAction Stop
-$buildArgs = @()
+$argsSTR = @('build', '--no-cache', '-f', $Dockerfile, '-t', $Tag, $buildArgsSTR, '.') -join ' '
 
-foreach ($line in $lines) {
-    $line = $line.Trim()
-    if (-not $line -or $line.StartsWith('#')) { continue }
-    if ($line -notmatch '=') { continue }
-    $parts = $line -split '=', 2
-    $k = $parts[0].Trim()
-    $v = $parts[1].Trim()
-    if ($v.StartsWith('"') -and $v.EndsWith('"')) { $v = $v.Substring(1, $v.Length - 2) }
-    if ($v.StartsWith("'") -and $v.EndsWith("'")) { $v = $v.Substring(1, $v.Length - 2) }
-    $buildArgs += '--build-arg'
-    $buildArgs += "$k=$v"
-}
-
-$argsSTR = @('build', '--no-cache', '-f', $Dockerfile, '-t', $Tag) + $buildArgs + '.'
-
-Write-Host "Ejecutando: docker $($argsSTR -join ' ')" & docker @argsSTR
+Write-Host "Ejecutando: docker $argsSTR" 
+docker @argsSTR
 $code = $LASTEXITCODE
 if ($code -ne 0) {
     Write-Error "docker build falló con código $code"
