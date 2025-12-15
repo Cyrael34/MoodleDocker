@@ -27,8 +27,21 @@ $moodleserverport = $envVars['MOODLE_SERVER_PORT']
 
 $MOODLE_VOLUME_PATH = $envVars['MOODLE_VOLUME_PATH']
 $volumePath = $envVars['VOLUME_PATH']
-
 $networkName = $envVars['NETWORK_NAME']
+
+if (
+        $envVars['NETWORK_NAME'] -and `
+        $envVars['NETWORK_SUBNET'] -and `
+        $envVars['NETWORK_SUBNET_GATEWAY'] -and `
+        $envVars['IP'] -and `
+        -not (docker network ls --filter "name=^${envVars['NETWORK_NAME]}$" --format "{{.Name}}")
+    ) {
+        $networkName = $envVars['NETWORK_NAME']
+        
+        Write-Host "Creando red: $networkName"
+        docker network create $networkName --subnet=$($envVars['NETWORK_SUBNET']) --gateway=$($envVars['NETWORK_SUBNET_GATEWAY'])
+    }
+
 
 # Eliminar contenedor si existe
 if (docker ps -a --filter "name=^${containerName}$" --format "{{.Names}}" | Select-Object -First 1) {
