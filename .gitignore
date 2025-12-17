@@ -1,2 +1,3 @@
+#Aqui se esta definiendo que carpetas van a ser ingoradas en este caso todo lo que este dentro de logs/ y mysql_data/ 
 logs/
 mysql_data/

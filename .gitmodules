@@ -1,3 +1,4 @@
+#Se añade un submodulo que lo coje del path para ver si esta el submodulo y tambien esta la url del submodulo para poder clonarlo 
 [submodule "moodle_src"]
 	path = moodle_src
 	url = https://github.com/moodle/moodle.git
